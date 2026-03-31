@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env
+
+# Data & model artifacts
+*.csv
+chroma_db_math/
+ollama.log
+
+# OS
+.DS_Store
+Thumbs.db

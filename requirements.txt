@@ -1,0 +1,11 @@
+datasets
+sentence-transformers
+faiss-cpu
+torch
+pandas
+numpy
+langchain
+langchain-community
+langchain-openai
+chromadb
+openpyxl
