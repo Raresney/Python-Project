@@ -411,14 +411,15 @@ try:
     openai_api_key = userdata.get('OPENAI_API_KEY')
     if not openai_api_key:
         raise ValueError
-    os.environ["OPENAI_API_KEY"] = openai_api_key
+    # API key passed directly to ChatOpenAI, not stored in env
 except ImportError:
     pass
 
 OPENAI_MODEL_NAME = "gpt-3.5-turbo"
 
-if "OPENAI_API_KEY" in os.environ:
-    llm = ChatOpenAI(model_name=OPENAI_MODEL_NAME, temperature=0.1)
+openai_api_key = os.environ.get("OPENAI_API_KEY", openai_api_key if "openai_api_key" in dir() else None)
+if openai_api_key:
+    llm = ChatOpenAI(model_name=OPENAI_MODEL_NAME, temperature=0.1, api_key=openai_api_key)
     print(f"   LLM initializat: {OPENAI_MODEL_NAME}")
 else:
     print("EROARE: OPENAI_API_KEY nu este setat. Setati-l ca variabila de mediu.")
@@ -449,11 +450,22 @@ Python Code:
 prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
 
 
+def sanitize_context(text, max_length=2000):
+    """Sanitize context data to prevent prompt injection"""
+    if not isinstance(text, str):
+        return str(text)[:max_length]
+    dangerous = ["ignore previous instructions", "ignore all instructions",
+                 "disregard above", "system prompt", "you are now"]
+    cleaned = text
+    for pattern in dangerous:
+        cleaned = cleaned.lower().replace(pattern, "[filtered]")
+    return cleaned[:max_length]
+
 def format_docs(docs):
     formatted_list = []
     for i, doc in enumerate(docs):
-        content = doc.page_content
-        solution = doc.metadata.get('solution_cleaned', 'N/A')
+        content = sanitize_context(doc.page_content)
+        solution = sanitize_context(doc.metadata.get('solution_cleaned', 'N/A'))
         formatted_list.append(
             f"Example {i+1}:\n"
             f"Problem Description: {content}\n"
@@ -470,11 +482,14 @@ rag_chain = (
 )
 
 try:
-    single_test_question = input(">>> Introduceti problema matematica (in limbaj natural) si apasati Enter: ")
+    single_test_question = input(">>> Introduceti problema matematica (max 1000 caractere): ")
     if not single_test_question or not single_test_question.strip():
         print("Nu a fost introdusa nicio intrebare.")
         exit()
     single_test_question = single_test_question.strip()
+    if len(single_test_question) > 1000:
+        print("Intrebarea e prea lunga (max 1000 caractere).")
+        exit()
 except (EOFError, KeyboardInterrupt):
     print("\nIntrerupt de utilizator.")
     exit()
